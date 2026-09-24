@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Práctica interactiva · Matemáticas III · Geometría Analítica</title>
+<style>
+:root{--ink:#172033;--muted:#667085;--line:#d0d5dd;--bg:#f4f6fb;--card:#fff;--accent:#334155;--blue:#2563eb;--red:#dc2626;--green:#15803d}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+.wrap{max-width:1180px;margin:auto;padding:20px}
+header,.card{background:var(--card);border-radius:18px;box-shadow:0 3px 14px #00000012}
+header{padding:22px;margin-bottom:16px} h1{margin:0 0 5px;font-size:27px}.sub{margin:0;color:var(--muted)}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}
+button,select,input{font:inherit} button{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700}
+button.primary{background:var(--accent);color:#fff} button.secondary{background:#e8edf3;color:#172033}
+button:focus,input:focus,select:focus{outline:3px solid #bfdbfe;outline-offset:1px}
+select{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.layout{display:grid;grid-template-columns:370px 1fr;gap:16px}.card{padding:19px}
+h2{font-size:19px;margin:0 0 12px}.eq{font-size:27px;text-align:center;font-weight:700;background:#f1f5f9;padding:13px;border-radius:12px;margin:12px 0}
+.help{font-size:14px;line-height:1.45;color:#475467}.badge{display:inline-block;background:#e0e7ff;color:#3730a3;padding:5px 9px;border-radius:99px;font-size:12px;font-weight:700}
+table{border-collapse:collapse;width:100%;margin-top:12px}th,td{border:1px solid var(--line);padding:8px;text-align:center}th{background:#eef2f7}
+input.num{width:78px;padding:7px;border:1px solid #98a2b3;border-radius:8px;text-align:center}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.feedback{display:none;margin-top:13px;padding:11px;border-radius:10px;font-size:14px}.ok{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}
+canvas{display:block;width:100%;max-width:760px;height:auto;margin:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.legend{font-size:13px;color:var(--muted);text-align:center;margin-top:8px}
+.score{font-size:13px;color:var(--muted);margin-top:10px}
+@media(max-width:820px){.layout{grid-template-columns:1fr}.wrap{padding:10px}h1{font-size:23px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>Matemáticas III · Geometría Analítica</h1>
+<p class="sub">Práctica interactiva de tabulación y ubicación de puntos</p>
+<div class="toolbar">
+<label>
+<span class="badge">Tema</span>
+<select id="topic">
+<option value="recta">Recta</option>
+<option value="parabola">Parábola</option>
+<option value="circunferencia">Circunferencia</option>
+<option value="elipse">Elipse</option>
+</select>
+</label>
+<button class="secondary" id="newBtn">Nuevo ejercicio</button>
+<button class="primary" id="checkBtn">Comprobar</button>
+</div>
+</header>
+
+<div class="layout">
+<section class="card">
+<div><span class="badge" id="level"></span></div>
+<h2 id="title">Tabula los puntos</h2>
+<p class="help" id="instruction"></p>
+<div class="eq" id="equation"></div>
+<table>
+<thead><tr><th>x</th><th>y</th><th>punto</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+<div class="actions">
+<button class="primary" id="check2">Comprobar</button>
+<button class="secondary" id="clearBtn">Limpiar respuestas</button>
+</div>
+<div id="feedback" class="feedback" aria-live="polite"></div>
+<div class="score" id="score"></div>
+</section>
+
+<section class="card">
+<h2>Plano cartesiano</h2>
+<canvas id="graph" width="760" height="560"></canvas>
+<div class="legend">Azul = tus puntos · Rojo = resultado correcto después de comprobar</div>
+</section>
+</div>
+</div>
+
+<script>
+const data={
+ recta:[
+  {name:"Nivel 1 · forma pendiente-intersección",eq:"y = 2x + 1",type:"line",a:2,b:1,x:[-3,-2,-1,0,1,2,3],range:7},
+  {name:"Nivel 1 · pendiente negativa",eq:"y = -x + 3",type:"line",a:-1,b:3,x:[-3,-2,-1,0,1,2,3],range:7},
+  {name:"Nivel 2 · pendiente mayor",eq:"y = 3x - 2",type:"line",a:3,b:-2,x:[-2,-1,0,1,2],range:6},
+  {name:"Nivel 2 · forma general",eq:"2x + y = 4  →  y = 4 - 2x",type:"line",a:-2,b:4,x:[-2,-1,0,1,2],range:6}
+ ],
+ parabola:[
+  {name:"Nivel 1 · parábola vertical",eq:"y = x² - 2",type:"parabola",f:x=>x*x-2,x:[-3,-2,-1,0,1,2,3],range:6},
+  {name:"Nivel 2 · parábola desplazada",eq:"y = (x - 1)² - 3",type:"parabola",f:x=>(x-1)*(x-1)-3,x:[-2,-1,0,1,2,3,4],range:6},
+  {name:"Nivel 2 · parábola abierta hacia abajo",eq:"y = -x² + 4",type:"parabola",f:x=>-x*x+4,x:[-3,-2,-1,0,1,2,3],range:6}
+ ],
+ circunferencia:[
+  {name:"Nivel 1 · centro en el origen",eq:"x² + y² = 25",type:"circle",cx:0,cy:0,r:5,points:[[-5,0],[-4,3],[-3,4],[0,5],[3,4],[4,3],[5,0]]},
+  {name:"Nivel 2 · centro fuera del origen",eq:"(x - 2)² + (y + 1)² = 16",type:"circle",cx:2,cy:-1,r:4,points:[[-2,-1],[-1,2],[2,3],[5,-1],[2,-5],[0,-4]]},
+  {name:"Nivel 2 · centro en cuadrante II",eq:"(x + 2)² + (y - 1)² = 9",type:"circle",cx:-2,cy:1,r:3,points:[[-5,1],[-4,3],[-2,4],[1,1],[-2,-2]]}
+ ],
+ elipse:[
+  {name:"Nivel 1 · centro en el origen",eq:"x²/25 + y²/9 = 1",type:"ellipse",cx:0,cy:0,rx:5,ry:3,points:[[-5,0],[-4,1.8],[-3,2.4],[0,3],[3,2.4],[4,1.8],[5,0]]},
+  {name:"Nivel 2 · centro desplazado",eq:"(x - 2)²/16 + (y + 1)²/9 = 1",type:"ellipse",cx:2,cy:-1,rx:4,ry:3,points:[[-2,-1],[-1,1.25],[2,2],[5,1.25],[6,-1],[2,-4]]}
+ ]
+};
+let topic="recta", idx=0, checked=false;
+const canvas=document.getElementById("graph"),ctx=canvas.getContext("2d");
+const rows=document.getElementById("rows"), feedback=document.getElementById("feedback");
+
+function ex(){return data[topic][idx%data[topic].length]}
+function scale(){return 45}
+function px(x){return canvas.width/2+x*scale()}
+function py(y){return canvas.height/2-y*scale()}
+function drawGrid(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.strokeStyle="#e5e7eb";ctx.lineWidth=1;
+ for(let x=-8;x<=8;x++){ctx.beginPath();ctx.moveTo(px(x),0);ctx.lineTo(px(x),canvas.height);ctx.stroke()}
+ for(let y=-5;y<=5;y++){ctx.beginPath();ctx.moveTo(0,py(y));ctx.lineTo(canvas.width,py(y));ctx.stroke()}
+ ctx.strokeStyle="#475467";ctx.lineWidth=2;
+ ctx.beginPath();ctx.moveTo(0,py(0));ctx.lineTo(canvas.width,py(0));ctx.stroke();
+ ctx.beginPath();ctx.moveTo(px(0),0);ctx.lineTo(px(0),canvas.height);ctx.stroke();
+ ctx.fillStyle="#475467";ctx.font="12px Arial";
+ for(let x=-8;x<=8;x++)if(x)ctx.fillText(x,px(x)-4,py(0)+16);
+ for(let y=-5;y<=5;y++)if(y)ctx.fillText(y,px(0)+7,py(y)+4);
+ ctx.fillText("x",canvas.width-16,py(0)-8);ctx.fillText("y",px(0)+9,15);
+}
+function draw(){
+ drawGrid();let e=ex();
+ // student points
+ [...rows.querySelectorAll("input")].forEach(input=>{
+  if(input.value==="")return;
+  const x=Number(input.dataset.x),y=Number(input.value);
+  if(!Number.isFinite(y)||x<-8||x>8||y<-5||y>5)return;
+  ctx.fillStyle="#2563eb";ctx.beginPath();ctx.arc(px(x),py(y),6,0,Math.PI*2);ctx.fill();
+ });
+ if(!checked)return;
+ ctx.strokeStyle="#dc2626";ctx.lineWidth=3;
+ if(e.type==="line"){
+  let x1=-8,x2=8;ctx.beginPath();ctx.moveTo(px(x1),py(e.a*x1+e.b));ctx.lineTo(px(x2),py(e.a*x2+e.b));ctx.stroke();
+  e.x.forEach(x=>point(x,e.a*x+e.b,"#dc2626",4));
+ } else if(e.type==="parabola"){
+  ctx.beginPath();let started=false;
+  for(let x=-8;x<=8;x+=.05){let y=e.f(x);if(y>=-7&&y<=7){if(!started){ctx.moveTo(px(x),py(y));started=true}else ctx.lineTo(px(x),py(y))}}
+  ctx.stroke();e.x.forEach(x=>point(x,e.f(x),"#dc2626",4));
+ } else if(e.type==="circle"){
+  ctx.beginPath();ctx.arc(px(e.cx),py(e.cy),e.r*scale(),0,Math.PI*2);ctx.stroke();
+  e.points.forEach(p=>point(p[0],p[1],"#dc2626",4));
+ } else if(e.type==="ellipse"){
+  ctx.beginPath();ctx.ellipse(px(e.cx),py(e.cy),e.rx*scale(),e.ry*scale(),0,0,Math.PI*2);ctx.stroke();
+  e.points.forEach(p=>point(p[0],p[1],"#dc2626",4));
+ }
+}
+function point(x,y,color,r){if(x<-8||x>8||y<-6||y>6)return;ctx.fillStyle=color;ctx.beginPath();ctx.arc(px(x),py(y),r,0,Math.PI*2);ctx.fill()}
+function makeRows(){
+ const e=ex();rows.innerHTML="";
+ let xs=e.x||e.points.map(p=>p[0]);
+ xs.forEach(x=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td>${x}</td><td><input class="num" type="number" step="any" data-x="${x}" aria-label="valor de y para x ${x}"></td><td id="p${String(x).replace("-","m").replace(".","d")}">(${x}, ?)</td>`;
+  rows.appendChild(tr);
+ });
+ [...rows.querySelectorAll("input")].forEach(i=>i.addEventListener("input",()=>{
+  const td=i.parentElement.nextElementSibling;td.textContent=`(${i.dataset.x}, ${i.value===""?"?":i.value})`;
+  checked=false;feedback.style.display="none";draw();
+ }));
+}
+function setText(){
+ const e=ex();
+ document.getElementById("level").textContent=e.name;
+ document.getElementById("equation").textContent=e.eq;
+ document.getElementById("title").textContent=(e.type==="line"||e.type==="parabola")?"Calcula y para cada valor de x":"Obtén las coordenadas de puntos de la curva";
+ document.getElementById("instruction").textContent=
+ e.type==="line"||e.type==="parabola"
+ ?"Sustituye cada valor de x en la ecuación y escribe el valor de y. Cada respuesta aparecerá como punto azul."
+ :"Para cada x indicado, encuentra los valores de y que satisfacen la ecuación. Escribe un valor de y por fila y compara posteriormente con la curva.";
+ checked=false;feedback.style.display="none";makeRows();draw();
+}
+function expected(){
+ const e=ex();
+ if(e.type==="line"||e.type==="parabola")return e.x.map(x=>[x,e.type==="line"?e.a*x+e.b:e.f(x)]);
+ return e.points;
+}
+function check(){
+ const exp=expected(), inputs=[...rows.querySelectorAll("input")];
+ let correct=0,empty=0;
+ inputs.forEach((i,k)=>{if(i.value===""){empty++;return}let y=Number(i.value),target=exp[k][1];if(Math.abs(y-target)<0.11)correct++});
+ checked=true;draw();
+ feedback.style.display="block";feedback.className="feedback "+(correct===inputs.length?"ok":"warn");
+ feedback.innerHTML=correct===inputs.length
+ ?`¡Excelente! ${correct} de ${inputs.length} respuestas correctas. La curva roja representa el resultado correcto.`
+ :`Tienes <strong>${correct} de ${inputs.length}</strong> respuestas correctas${empty?` y ${empty} sin responder`:""}. Compara tus puntos azules con la gráfica roja y revisa tus sustituciones.`;
+}
+function clearAll(){[...rows.querySelectorAll("input")].forEach(i=>{i.value="";i.parentElement.nextElementSibling.textContent=`(${i.dataset.x}, ?)`});checked=false;feedback.style.display="none";draw()}
+document.getElementById("topic").addEventListener("change",e=>{topic=e.target.value;idx=0;setText()});
+document.getElementById("newBtn").addEventListener("click",()=>{idx++;setText()});
+document.getElementById("checkBtn").addEventListener("click",check);
+document.getElementById("check2").addEventListener("click",check);
+document.getElementById("clearBtn").addEventListener("click",clearAll);
+setText();
+</script>
+</body>
+</html>
